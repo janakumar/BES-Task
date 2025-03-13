@@ -41,40 +41,26 @@ class FileProcessor:
             return
         
         try:
-            # Load data
+            # Loading data
             boq_df = pd.read_excel(self.boq_path)
             data1_df = pd.read_csv(self.data1_path)
             desc_df = pd.read_csv(self.desc_path)
 
-            # Standardize column names (strip spaces)
             boq_df.columns = boq_df.columns.str.strip()
             data1_df.columns = data1_df.columns.str.strip()
             desc_df.columns = desc_df.columns.str.strip()
 
-            # Rename columns in Data1.csv to match BOQ for merging
             data1_df.rename(columns={"RM (m)": "RMT"}, inplace=True)
-
-            # Rename columns in Description.csv for merging
             desc_df.rename(columns={"Description": "Brief Description", "Cost": "Rate (INR)"}, inplace=True)
-
-            # Merge BOQ and Data1.csv on "Facade Type" & "Sub Type"
             merged_df = pd.merge(boq_df, data1_df, on=["Facade Type", "Sub Type"], how="outer", sort=False)
-
-            # Merge the result with Description.csv on "Facade Type" & "Sub Type"
             merged_df = pd.merge(merged_df, desc_df, on=["Facade Type", "Sub Type"], how="outer", sort=False)
-
-            # Find common values of 'Facade Type' and 'Sub Type' in all three DataFrames
             common_facade_types = set(boq_df["Facade Type"]) & set(data1_df["Facade Type"]) & set(desc_df["Facade Type"])
             common_sub_types = set(boq_df["Sub Type"]) & set(data1_df["Sub Type"]) & set(desc_df["Sub Type"])
-
-            # Filter merged_df based on these common values
             filtered_df = merged_df[(merged_df["Facade Type"].isin(common_facade_types)) & (merged_df["Sub Type"].isin(common_sub_types))]
             filtered_df = filtered_df.dropna(subset=["Facade Type", "Sub Type"])
 
-            # Remove empty columns
             filtered_df = filtered_df.dropna(axis=1, how='all')
 
-            # Save to Excel
             output_file = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
             filtered_df.to_excel(output_file, index=False)
             
